@@ -1,0 +1,31 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+*.trx
+
+# Node / Vite
+node_modules/
+dist/
+*.local
+.env
+.env.*
+!.env.example
+
+# Editors / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+Thumbs.db
+.DS_Store
+
+# Secrets - production/staging settings come from environment variables or a secret store
+appsettings.Production.json
+appsettings.Staging.json
+*.pfx
+
+# Uploaded files in local development
+src/Server/App_Data/

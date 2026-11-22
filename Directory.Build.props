@@ -1,0 +1,9 @@
+<Project>
+  <!-- Shared settings for every .NET project in the solution. -->
+  <PropertyGroup>
+    <RootNamespace>GoGoaRentals.$(MSBuildProjectName)</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+</Project>
