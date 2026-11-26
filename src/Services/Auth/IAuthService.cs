@@ -12,7 +12,4 @@ public interface IAuthService
 
     /// <summary>Returns null if the user no longer exists or is not active.</summary>
     Task<AuthenticatedUser?> GetActiveUserAsync(int userId, CancellationToken cancellationToken = default);
-
-    /// <summary>Development only: creates the super admin if no super admin exists yet.</summary>
-    Task EnsureAdminAsync(string name, string email, string password, CancellationToken cancellationToken = default);
 }

@@ -8,8 +8,8 @@ namespace GoGoaRentals.Tests.Integration.Api;
 /// <summary>The API wired to the test database, with uploads in a temp folder.</summary>
 public sealed class ApiFactory : WebApplicationFactory<Program>
 {
-    // Matches DevSeed in appsettings.Development.json; the factory runs in the Development environment.
-    public const string AdminEmail = "admin@gogoarentals.local";
+    // Test-only admin, inserted into the test database by TestDatabase.SeedTestAdmin.
+    public const string AdminEmail = "admin@tests.local";
     public const string AdminPassword = "Admin@12345";
     public const string Password = "Correct-Horse-9";
 

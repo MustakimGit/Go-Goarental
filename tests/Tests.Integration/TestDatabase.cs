@@ -1,3 +1,6 @@
+using GoGoaRentals.Entities.Models;
+using GoGoaRentals.Tests.Integration.Api;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 
 namespace GoGoaRentals.Tests.Integration;
@@ -54,9 +57,21 @@ internal static class TestDatabase
             {
                 Execute(db, File.ReadAllText(script));
             }
+
+            SeedTestAdmin(db);
         }
 
         return builder.ConnectionString;
+    }
+
+    /// <summary>A test-only admin (ApiFactory.AdminEmail) so the suite never needs the real admin's password.</summary>
+    private static void SeedTestAdmin(SqlConnection connection)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = "INSERT INTO dbo.Users (Name, Email, PasswordHash, Role, Status) VALUES (N'Test Admin', @email, @hash, 1, 1);";
+        command.Parameters.AddWithValue("@email", ApiFactory.AdminEmail);
+        command.Parameters.AddWithValue("@hash", new PasswordHasher<User>().HashPassword(new User(), ApiFactory.AdminPassword));
+        command.ExecuteNonQuery();
     }
 
     private static void Execute(SqlConnection connection, string sql)

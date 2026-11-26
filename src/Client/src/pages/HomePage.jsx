@@ -35,6 +35,17 @@ import { cn } from '@/lib/utils'
 
 const isTwoWheeler = (categoryName) => /two/i.test(categoryName ?? '')
 
+// "Starting from" daily prices shown on the fleet cards, by vehicle type name. Display only: the price a customer
+// pays comes from Admin → Pricing, so keep these in step with it. Types not listed here show no price.
+const STARTING_PRICES = {
+  hatchback: 1100,
+  sedan: 1200,
+  suv: 2000,
+  gear: 500,
+  'non gear': 500,
+}
+const startingPrice = (typeName) => STARTING_PRICES[typeName?.trim().toLowerCase()]
+
 function SectionHeading({ eyebrow, title, children, className }) {
   return (
     <Reveal className={cn('mx-auto max-w-2xl text-center', className)}>
@@ -135,6 +146,7 @@ function Hero() {
 function FleetCard({ type, delay }) {
   const two = isTwoWheeler(type.categoryName)
   const Icon = two ? Bike : Car
+  const price = startingPrice(type.name)
   return (
     <Reveal delay={delay} className="h-full">
       <article className="group flex h-full flex-col overflow-hidden rounded-2xl bg-card ring-1 ring-foreground/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-blue/10 hover:ring-brand-blue/30">
@@ -158,7 +170,14 @@ function FleetCard({ type, delay }) {
         <div className="flex flex-1 flex-col gap-2 p-4">
           <h3 className="text-lg font-semibold">{type.name}</h3>
           {type.description && <p className="text-sm text-muted-foreground">{type.description}</p>}
-          <div className="mt-auto flex items-center justify-between pt-3">
+          {price != null && (
+            <p className="mt-auto flex items-baseline gap-1 pt-3">
+              <span className="text-xs text-muted-foreground">Starting from</span>
+              <span className="text-xl font-bold text-brand-blue">{rupees(price)}</span>
+              <span className="text-xs text-muted-foreground">/day</span>
+            </p>
+          )}
+          <div className={cn('flex items-center justify-between', price != null ? 'pt-1' : 'mt-auto pt-3')}>
             {type.seatingCapacity ? (
               <span className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Users className="size-4" aria-hidden="true" /> {type.seatingCapacity} seats

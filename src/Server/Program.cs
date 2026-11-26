@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Security.Claims;
 using System.Text.Json.Serialization;
 using GoGoaRentals.Entities.Data;
@@ -9,6 +10,7 @@ using GoGoaRentals.Services.Common;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -83,23 +85,22 @@ builder.Services.AddControllers()
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database");
 
+// Brotli/gzip for the JS/CSS bundle, SVGs and JSON API responses (images are already compressed).
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(["image/svg+xml"]);
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
-{
-    // Local convenience only: a known admin so the admin screens can be tried out.
-    var seed = app.Configuration.GetSection("DevSeed");
-    if (!string.IsNullOrWhiteSpace(seed["AdminEmail"]) && !string.IsNullOrWhiteSpace(seed["AdminPassword"]))
-    {
-        using var scope = app.Services.CreateScope();
-        await scope.ServiceProvider.GetRequiredService<IAuthService>()
-            .EnsureAdminAsync("Admin", seed["AdminEmail"]!, seed["AdminPassword"]!);
-    }
-}
 
 app.UseExceptionHandler();
 
@@ -117,8 +118,30 @@ else
 
 // Hosted environments: the built React app is published into wwwroot and served by this same site,
 // so /api calls stay same-origin. Locally, wwwroot is empty and the Vite dev server serves the client.
+app.UseResponseCompression();
 app.UseDefaultFiles();
-app.UseStaticFiles();
+var staticFileOptions = new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        var headers = ctx.Context.Response.Headers;
+        if (ctx.Context.Request.Path.StartsWithSegments("/assets"))
+        {
+            // Vite fingerprints these file names, so a new build always gets new URLs.
+            headers.CacheControl = "public, max-age=31536000, immutable";
+        }
+        else if (ctx.File.Name.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
+        {
+            // index.html must be re-checked so visitors pick up new deployments.
+            headers.CacheControl = "no-cache";
+        }
+        else
+        {
+            headers.CacheControl = "public, max-age=604800"; // logo, favicons: one week
+        }
+    },
+};
+app.UseStaticFiles(staticFileOptions);
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -126,7 +149,7 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/api/health");
 // Client-side routes (e.g. /bookings/12) fall back to the React app.
-app.MapFallbackToFile("index.html");
+app.MapFallbackToFile("index.html", staticFileOptions);
 
 app.Run();
 

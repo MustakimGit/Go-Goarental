@@ -74,25 +74,6 @@ public sealed class AuthService(AppDbContext db, IPasswordHasher<User> passwordH
         return user is null ? null : ToAuthenticatedUser(user);
     }
 
-    public async Task EnsureAdminAsync(string name, string email, string password, CancellationToken cancellationToken = default)
-    {
-        var admin = EnumValue.ToByte(UserRole.Admin);
-        if (await db.Users.AnyAsync(u => u.Role == admin, cancellationToken))
-        {
-            return;
-        }
-
-        db.Users.Add(NewUser(name, email, null, password, UserRole.Admin));
-        try
-        {
-            await SaveNewAccountAsync(cancellationToken);
-        }
-        catch (EmailAlreadyRegisteredException)
-        {
-            // Another app instance (e.g. a parallel test host) seeded it first.
-        }
-    }
-
     private User NewUser(string name, string email, string? phone, string password, UserRole role)
     {
         var now = DateTime.UtcNow;

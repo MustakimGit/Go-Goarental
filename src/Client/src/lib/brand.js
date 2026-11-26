@@ -1,5 +1,5 @@
-// The logo file in /public has spaces in its name, so it is referenced URL-encoded.
-export const LOGO_URL = '/GoGoa%20Rentals%20%20Logo.png'
+// Optimized from design/GoGoa Rentals  Logo.png (768px WebP); regenerate if the logo changes.
+export const LOGO_URL = '/logo.webp'
 export const BRAND_NAME = 'GoGoa Rentals'
 
 // Indian mobile number without the country code; +91 is added wherever it is shown or dialled.
@@ -11,5 +11,5 @@ export const BOOKING_WHATSAPP = CONTACT_PHONE
 // Shortest rental we accept, in rental days (9 am to 9 am). Shown in the header; Book is blocked below it.
 export const MIN_RENTAL_DAYS = 2
 
-// Lowest daily price, shown as "from ₹1,100/day" in marketing copy.
-export const STARTING_PRICE_PER_DAY = 1100
+// Lowest "starting from" daily price (two-wheelers), shown in the hero and above the fleet cards.
+export const STARTING_PRICE_PER_DAY = 500

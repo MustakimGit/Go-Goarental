@@ -60,8 +60,8 @@ your development data is never touched. To use an existing database instead (nev
 
 ## Local logins
 
-In development an admin is created on startup if none exists: **admin@gogoarentals.local / Admin@12345**
-(`DevSeed` in `src/Server/appsettings.Development.json`). Admins land on **Dashboard**, which lists every partner with
+The admin account comes from `database/010_seed_admin.sql` (hashed password, same in every environment), so run
+the database scripts before signing in as admin. Admins land on **Dashboard**, which lists every partner with
 their vehicles and whether each is bookable right now. Partners sign up on the website and an admin approves them
 under **Partners**; partners switch a vehicle on or off for bookings from **My vehicles**.
 

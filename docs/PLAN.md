@@ -138,7 +138,7 @@ Each phase ends with a build and passing tests before moving on.
 
 - **Login:** cookie auth (`ggr.auth`, HttpOnly, SameSite=Lax, Secure outside dev). Every request re-checks the user is
   still active and their role/partner id unchanged (`OnValidatePrincipal`), so suspensions apply immediately.
-  Development seeds an admin from `DevSeed` in `appsettings.Development.json`.
+  The admin account is seeded by `database/010_seed_admin.sql`; the app never creates one itself.
 - **Partners:** register → `PendingApproval` → admin approves (`Active`) or rejects. Active ⇄ Suspended; Rejected can
   be approved later. Only `Active` partners can add or switch on vehicles. Admin actions are written to `AuditLog`.
 - **Vehicles:** a vehicle needs a verified, unexpired RC, insurance, PUC and rental permit to go live
