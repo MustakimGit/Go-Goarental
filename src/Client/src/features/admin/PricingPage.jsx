@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import FormField from '@/features/auth/FormField'
 import useApiData from '@/hooks/useApiData'
+import { FOUR_WHEELER_DEPOSIT, TWO_WHEELER_DEPOSIT } from '@/lib/brand'
 import { formatDay, goaToday, rupees } from '@/lib/goaTime'
 import { adminApi } from './api'
 
@@ -22,7 +23,6 @@ const schema = z
   .object({
     vehicleTypeId: z.coerce.number().int().positive('Choose a vehicle type'),
     dailyPrice: z.coerce.number().positive('Enter a price above zero'),
-    depositAmount: z.coerce.number().min(0, 'Can’t be negative'),
     taxPercent: z.coerce.number().min(0).max(100),
     firstDay: z.string().min(1, 'Choose the first day'),
     lastDay: z.string().optional(),
@@ -37,19 +37,22 @@ function rateState(price, today) {
   return 'Current'
 }
 
+// Mirrors BookingPolicy:TwoWheelerDeposit / FourWheelerDeposit on the server, which is what quotes charge.
+const DEPOSIT_NOTE = `Deposit is fixed per booking, whatever the number of days: ${rupees(TWO_WHEELER_DEPOSIT)} for two-wheelers, ${rupees(FOUR_WHEELER_DEPOSIT)} for four-wheelers.`
+
 const stateLabels = { Current: 'Current', Upcoming: 'Upcoming', Ended: 'Ended', Withdrawn: 'Withdrawn' }
 const stateTone = { Current: 'Active', Upcoming: 'Pending', Ended: 'Inactive', Withdrawn: 'Inactive' } // reuse badge colours
 
 function AddPriceDialog({ open, types, defaultTypeId, onOpenChange, onSaved }) {
   const { register, handleSubmit, setError, formState } = useForm({
     resolver: zodResolver(schema),
-    values: { vehicleTypeId: defaultTypeId ?? '', dailyPrice: '', depositAmount: 0, taxPercent: 0, firstDay: goaToday(), lastDay: '' },
+    values: { vehicleTypeId: defaultTypeId ?? '', dailyPrice: '', taxPercent: 0, firstDay: goaToday(), lastDay: '' },
   })
   const { errors, isSubmitting } = formState
 
   const onSubmit = handleSubmit(async (values) => {
     try {
-      await adminApi.createPrice({ ...values, lastDay: values.lastDay || null })
+      await adminApi.createPrice({ ...values, depositAmount: 0, lastDay: values.lastDay || null })
       toast.success('Price saved')
       onSaved()
       onOpenChange(false)
@@ -82,10 +85,16 @@ function AddPriceDialog({ open, types, defaultTypeId, onOpenChange, onSaved }) {
             </NativeSelect>
             {errors.vehicleTypeId && <p className="text-sm text-destructive">{errors.vehicleTypeId.message}</p>}
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <FormField id="p-price" label="Price per day (₹)" type="number" min="1" step="1" error={errors.dailyPrice?.message} {...register('dailyPrice')} />
-            <FormField id="p-deposit" label="Deposit (₹)" type="number" min="0" step="1" error={errors.depositAmount?.message} {...register('depositAmount')} />
-          </div>
+          <FormField
+            id="p-price"
+            label="Price per day (₹)"
+            type="number"
+            min="1"
+            step="1"
+            hint={DEPOSIT_NOTE}
+            error={errors.dailyPrice?.message}
+            {...register('dailyPrice')}
+          />
           <FormField
             id="p-tax"
             label="Tax (%)"
@@ -140,7 +149,7 @@ export default function PricingPage() {
     <section className="mx-auto grid max-w-5xl gap-6 px-4 py-10">
       <PageHeader
         title="Pricing"
-        description="Daily prices customers pay per vehicle type. Bookings keep the price they were quoted."
+        description={`Daily prices customers pay per vehicle type. Bookings keep the price they were quoted. ${DEPOSIT_NOTE}`}
         actions={
           <Button onClick={() => setAdding({})}>
             <Plus /> Set a price
@@ -187,7 +196,6 @@ export default function PricingPage() {
                       <TableRow>
                         <TableHead>Days</TableHead>
                         <TableHead className="text-right">Per day</TableHead>
-                        <TableHead className="text-right">Deposit</TableHead>
                         <TableHead className="text-right">Tax</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="w-0" />
@@ -202,7 +210,6 @@ export default function PricingPage() {
                               {formatDay(p.firstDay)} → {p.lastDay ? formatDay(p.lastDay) : 'onwards'}
                             </TableCell>
                             <TableCell className="text-right tabular-nums">{rupees(p.dailyPrice)}</TableCell>
-                            <TableCell className="text-right tabular-nums">{rupees(p.depositAmount)}</TableCell>
                             <TableCell className="text-right tabular-nums">{p.taxPercent}%</TableCell>
                             <TableCell>
                               <StatusBadge value={stateTone[state]} labels={{ [stateTone[state]]: stateLabels[state] }} />

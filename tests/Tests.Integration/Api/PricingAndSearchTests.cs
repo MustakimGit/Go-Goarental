@@ -20,7 +20,7 @@ public class PricingAndSearchTests(ApiFactory factory) : IClassFixture<ApiFactor
     {
         using var admin = await factory.AdminClientAsync();
         var (typeId, locationId) = await CreateTypeAndLocationAsync(admin, deliveryFee: 250);
-        await AddPriceAsync(admin, typeId, 500, deposit: 1000, tax: 5, firstDay: Today);
+        await AddPriceAsync(admin, typeId, 500, deposit: 1000, tax: 5, firstDay: Today); // rate deposit is ignored
         var day = Today.AddDays(7);
 
         async Task<JsonElement> QuoteAsync(string pickup, string ret, string mode = "SelfPickup")
@@ -40,8 +40,8 @@ public class PricingAndSearchTests(ApiFactory factory) : IClassFixture<ApiFactor
         Assert.Equal(1500m, quote.GetProperty("rentalPrice").GetDecimal());
         Assert.Equal(75m, quote.GetProperty("taxAmount").GetDecimal());
         Assert.Equal(250m, quote.GetProperty("deliveryFee").GetDecimal());
-        Assert.Equal(1000m, quote.GetProperty("depositAmount").GetDecimal());
-        Assert.Equal(2825m, quote.GetProperty("totalAmount").GetDecimal());
+        Assert.Equal(4000m, quote.GetProperty("depositAmount").GetDecimal()); // fixed four-wheeler deposit
+        Assert.Equal(5825m, quote.GetProperty("totalAmount").GetDecimal());
     }
 
     [Fact]
@@ -116,6 +116,10 @@ public class PricingAndSearchTests(ApiFactory factory) : IClassFixture<ApiFactor
         var vehicleId = await factory.CreateLiveVehicleAsync(partner, typeId, locationId);
         Assert.Equal(1, await AvailableAsync(admin, typeId, locationId, pickup, ret));
 
+        // The partner's location is only where the vehicle is based: it is offered at every pickup point.
+        var (_, otherLocationId) = await CreateTypeAndLocationAsync(admin);
+        Assert.Equal(1, await AvailableAsync(admin, typeId, otherLocationId, pickup, ret));
+
         // Ends 30 minutes before pickup: inside the 60-minute turnaround buffer, so the vehicle isn't free.
         var block = await partner.PostAsJsonAsync($"/api/partner/vehicles/{vehicleId}/calendar", new
         {
@@ -174,7 +178,8 @@ public class PricingAndSearchTests(ApiFactory factory) : IClassFixture<ApiFactor
 
     private static async Task<(int TypeId, int LocationId)> CreateTypeAndLocationAsync(HttpClient admin, decimal deliveryFee = 0)
     {
-        var categoryId = (await admin.GetFromJsonAsync<JsonElement>("/api/admin/vehicle-categories"))[0].GetProperty("vehicleCategoryId").GetInt32();
+        var categoryId = (await admin.GetFromJsonAsync<JsonElement>("/api/admin/vehicle-categories")).EnumerateArray()
+            .First(c => c.GetProperty("name").GetString() == "Four-wheeler").GetProperty("vehicleCategoryId").GetInt32();
         var type = await admin.PostAsJsonAsync("/api/admin/vehicle-types", new { vehicleCategoryId = categoryId, name = $"Test type {Guid.NewGuid():N}" });
         type.EnsureSuccessStatusCode();
         var location = await admin.PostAsJsonAsync("/api/admin/pickup-locations", new

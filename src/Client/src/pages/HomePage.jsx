@@ -28,7 +28,7 @@ import { Button } from '@/components/ui/button'
 import SearchForm from '@/features/search/SearchForm'
 import { readSearchParams } from '@/features/search/searchParams'
 import useApiData from '@/hooks/useApiData'
-import { BRAND_NAME, CONTACT_PHONE, LOGO_URL, STARTING_PRICE_PER_DAY } from '@/lib/brand'
+import { BRAND_NAME, CONTACT_PHONE, FOUR_WHEELER_DEPOSIT, LOGO_URL, STARTING_PRICE_PER_DAY, TWO_WHEELER_DEPOSIT } from '@/lib/brand'
 import { formatPhone, phoneHref, whatsappHref } from '@/lib/format'
 import { rupees } from '@/lib/goaTime'
 import { cn } from '@/lib/utils'
@@ -45,6 +45,20 @@ const STARTING_PRICES = {
   'non gear': 500,
 }
 const startingPrice = (typeName) => STARTING_PRICES[typeName?.trim().toLowerCase()]
+
+// Card photos by vehicle type name, used when the type has no image set in Admin → Catalog. WebP in public/fleet
+// at 400 and 720 px wide (16:10); see design/FLEET-PHOTO-CREDITS.md for sources and licences.
+const FLEET_PHOTOS = {
+  hatchback: { file: 'hatchback', alt: 'Maruti Suzuki Baleno in Nexa Blue' },
+  sedan: { file: 'sedan', alt: 'Hyundai Verna in black' },
+  suv: { file: 'suv', alt: 'Mahindra Thar Roxx in black' },
+  gear: { file: 'gear', alt: 'Royal Enfield Bullet 350 in black and gold' },
+  'non gear': { file: 'non-gear', alt: 'Yamaha Fascino 125 scooter in yellow' },
+}
+const fleetPhoto = (typeName) => FLEET_PHOTOS[typeName?.trim().toLowerCase()]
+
+// Card width: one column on phones, two from sm, three (about 360px) from lg.
+const CARD_SIZES = '(min-width: 1024px) 360px, (min-width: 640px) 46vw, calc(100vw - 2rem)'
 
 function SectionHeading({ eyebrow, title, children, className }) {
   return (
@@ -66,7 +80,7 @@ function Hero() {
       <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pt-12 pb-28 md:grid-cols-[1.15fr_1fr] md:pt-20 md:pb-36">
         <div>
           <p className="inline-flex animate-fade-up items-center gap-2 rounded-full border border-brand-orange/30 bg-card/70 px-3 py-1 text-xs font-medium text-accent-foreground backdrop-blur">
-            <Sparkles className="size-3.5 text-brand-orange" aria-hidden="true" /> Scooters · Bikes · Cars across Goa
+            <Sparkles className="size-3.5 text-brand-orange" aria-hidden="true" /> Self drive cars, bikes &amp; scooters · 24 x 7
           </p>
           <h1 className="mt-5 animate-fade-up text-4xl leading-[1.05] font-extrabold tracking-tight text-balance [animation-delay:80ms] sm:text-5xl lg:text-6xl">
             Ride <span className="text-brand-gradient">Goa</span> your way, from the airport to the beach.
@@ -75,7 +89,8 @@ function Hero() {
             One fixed price per vehicle type. Pick your dates and pickup point and we find you a well-kept ride from a verified local
             partner.
           </p>
-          <div className="mt-8 flex animate-fade-up flex-wrap gap-3 [animation-delay:240ms]">
+          {/* data-contact-cta: the floating call/WhatsApp buttons appear once these scroll out of view. */}
+          <div data-contact-cta className="mt-8 flex animate-fade-up flex-wrap gap-3 [animation-delay:240ms]">
             <Button size="lg" className="h-11 rounded-full px-6 text-base shadow-lg shadow-primary/25 transition-transform hover:-translate-y-0.5" asChild>
               <a href="#search">
                 <Search /> Find a ride
@@ -147,6 +162,7 @@ function FleetCard({ type, delay }) {
   const two = isTwoWheeler(type.categoryName)
   const Icon = two ? Bike : Car
   const price = startingPrice(type.name)
+  const photo = type.imageUrl ? null : fleetPhoto(type.name)
   return (
     <Reveal delay={delay} className="h-full">
       <article className="group flex h-full flex-col overflow-hidden rounded-2xl bg-card ring-1 ring-foreground/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-blue/10 hover:ring-brand-blue/30">
@@ -159,7 +175,19 @@ function FleetCard({ type, delay }) {
           )}
         >
           {type.imageUrl ? (
-            <img src={type.imageUrl} alt="" className="size-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            <img src={type.imageUrl} alt="" loading="lazy" decoding="async" className="size-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          ) : photo ? (
+            <img
+              src={`/fleet/${photo.file}-400.webp`}
+              srcSet={`/fleet/${photo.file}-400.webp 400w, /fleet/${photo.file}-720.webp 720w`}
+              sizes={CARD_SIZES}
+              width="400"
+              height="250"
+              alt={photo.alt}
+              loading="lazy"
+              decoding="async"
+              className="size-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
+            />
           ) : (
             <Icon className="size-16 text-foreground/70 transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3" strokeWidth={1.4} aria-hidden="true" />
           )}
@@ -249,6 +277,20 @@ function Fleet() {
             <FleetCard key={t.vehicleTypeId} type={t} delay={(i % 3) * 90} />
           ))}
         </div>
+      )}
+      {all.length > 0 && (
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          Representative photos; the exact model may vary. Bullet photo by Thomas Good via{' '}
+          <a
+            href="https://commons.wikimedia.org/wiki/File:2024_Royal_Enfield_Bullet_350_Black_Gold.jpg"
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-2 hover:text-foreground"
+          >
+            Wikimedia Commons
+          </a>{' '}
+          (CC BY-SA 4.0).
+        </p>
       )}
     </section>
   )
@@ -384,7 +426,7 @@ const faqs = [
   ],
   [
     'Is there a security deposit?',
-    'Most vehicle types have a refundable deposit, shown in the price breakdown before you book. It is returned when the vehicle comes back in good condition.',
+    `Yes, one fixed refundable deposit per booking, however many days you rent: ${rupees(FOUR_WHEELER_DEPOSIT)} for any car and ${rupees(TWO_WHEELER_DEPOSIT)} for any scooter or bike. It is returned when the vehicle comes back in good condition.`,
   ],
   [
     'Can the vehicle be delivered to my hotel?',

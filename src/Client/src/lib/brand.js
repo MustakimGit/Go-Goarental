@@ -13,3 +13,8 @@ export const MIN_RENTAL_DAYS = 2
 
 // Lowest "starting from" daily price (two-wheelers), shown in the hero and above the fleet cards.
 export const STARTING_PRICE_PER_DAY = 500
+
+// Fixed refundable deposit per booking, whatever the number of days. Display only: the server charges
+// BookingPolicy:TwoWheelerDeposit / FourWheelerDeposit, so keep these in step with appsettings.json.
+export const TWO_WHEELER_DEPOSIT = 1500
+export const FOUR_WHEELER_DEPOSIT = 4000

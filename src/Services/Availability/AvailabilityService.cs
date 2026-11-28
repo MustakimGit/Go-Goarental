@@ -10,18 +10,18 @@ namespace GoGoaRentals.Services.Availability;
 public interface IAvailabilityService
 {
     /// <summary>
-    /// Number of bookable vehicles per vehicle type based at the pickup location and free for the whole period
-    /// (with the turnaround buffer). Types with no free vehicle are absent from the result.
+    /// Number of bookable vehicles per vehicle type free for the whole period (with the turnaround buffer).
+    /// A partner's pickup location is where the vehicle is based, not a limit: partners bring it to any pickup
+    /// point, so every live vehicle counts whichever point the customer picks. Types with no free vehicle are absent.
     /// </summary>
-    Task<IReadOnlyDictionary<int, int>> CountFreeByTypeAsync(int pickupLocationId, DateTime startUtc, DateTime endUtc, CancellationToken cancellationToken = default);
+    Task<IReadOnlyDictionary<int, int>> CountFreeByTypeAsync(DateTime startUtc, DateTime endUtc, CancellationToken cancellationToken = default);
 }
 
 public sealed class AvailabilityService(AppDbContext db, IOptions<AllocationOptions> allocation, TimeProvider time) : IAvailabilityService
 {
-    public async Task<IReadOnlyDictionary<int, int>> CountFreeByTypeAsync(int pickupLocationId, DateTime startUtc, DateTime endUtc, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyDictionary<int, int>> CountFreeByTypeAsync(DateTime startUtc, DateTime endUtc, CancellationToken cancellationToken = default)
     {
         return await BookableVehicles(db)
-            .Where(v => v.PickupLocationId == pickupLocationId)
             .Where(FreeBetween(startUtc, endUtc, allocation.Value.TurnaroundBufferMinutes, time.GetUtcNow().UtcDateTime))
             .GroupBy(v => v.VehicleTypeId)
             .Select(g => new { g.Key, Count = g.Count() })

@@ -138,7 +138,7 @@ export default function VehicleFormDialog({ vehicle, onOpenChange, onSaved }) {
           <SelectField
             id="v-location"
             label="Based at"
-            hint="The pickup point this vehicle usually starts from."
+            hint="Where the vehicle is usually kept. Customers see it at every pickup point, so you may be asked to bring it to another one."
             error={errors.pickupLocationId?.message}
             {...register('pickupLocationId')}
           >

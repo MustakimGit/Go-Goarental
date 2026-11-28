@@ -66,7 +66,7 @@ public sealed class QuoteService(
             .Where(t => t.Status == ActiveType && t.VehicleCategory.IsActive)
             .ToListAsync(cancellationToken);
         var prices = await LoadPricesAsync(types.Select(t => t.VehicleTypeId).ToList(), period, cancellationToken);
-        var free = await availability.CountFreeByTypeAsync(location.PickupLocationId, period.StartUtc, period.EndUtc, cancellationToken);
+        var free = await availability.CountFreeByTypeAsync(period.StartUtc, period.EndUtc, cancellationToken);
 
         return types
             .Select(t => BuildQuote(t, location, request.PickupMode, period, prices, free))
@@ -85,7 +85,7 @@ public sealed class QuoteService(
             .SingleOrDefaultAsync(t => t.VehicleTypeId == request.VehicleTypeId && t.Status == ActiveType && t.VehicleCategory.IsActive, cancellationToken)
             ?? throw new NotFoundException("Vehicle type");
         var prices = await LoadPricesAsync([type.VehicleTypeId], period, cancellationToken);
-        var free = await availability.CountFreeByTypeAsync(location.PickupLocationId, period.StartUtc, period.EndUtc, cancellationToken);
+        var free = await availability.CountFreeByTypeAsync(period.StartUtc, period.EndUtc, cancellationToken);
 
         return BuildQuote(type, location, request.PickupMode, period, prices, free)
                ?? throw new BusinessRuleException($"{type.Name} isn't available to book for these dates.");
@@ -166,8 +166,8 @@ public sealed class QuoteService(
         var rental = days.Sum(d => d.Price);
         var tax = Money(days.Sum(d => d.Price * d.TaxPercent / 100m));
         var deliveryFee = mode == PickupMode.Delivery ? location.CustomerDeliveryFee : 0m;
-        // The deposit follows the rate on the first day.
-        var deposit = prices[type.VehicleTypeId].Single(p => p.PricingId == days[0].PricingId).DepositAmount;
+        // One fixed refundable deposit per booking by category, however many days (not the rate's DepositAmount).
+        var deposit = policy.Value.DepositFor(type.VehicleCategory.Name);
 
         return new Quote(
             type.VehicleTypeId,

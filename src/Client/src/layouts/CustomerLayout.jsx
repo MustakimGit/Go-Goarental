@@ -2,6 +2,7 @@ import { ArrowLeft, CalendarDays, Clock, Heart, MapPin, MessageCircle, Phone, Ro
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
+import FloatingContact from '@/components/FloatingContact'
 import { Button } from '@/components/ui/button'
 import { logout, selectAuthChecked, selectCurrentUser } from '@/features/auth/authSlice'
 import { BRAND_NAME, CONTACT_PHONE, LOGO_URL, MIN_RENTAL_DAYS } from '@/lib/brand'
@@ -20,7 +21,8 @@ export function BrandMark({ className, size = 'md' }) {
       <span className="grid leading-none">
         <span className={cn('font-extrabold tracking-tight italic', size === 'lg' ? 'text-2xl' : 'text-xl')}>
           <span className="text-brand-blue">Go</span>
-          <span className="text-brand-orange">Goa</span>
+          {/* Darker than brand-orange so the logotype keeps 3:1 contrast on the pale header. */}
+          <span className="text-[#d27200]">Goa</span>
         </span>
         <span className="mt-0.5 text-[0.65rem] font-semibold tracking-[0.3em] text-brand-blue uppercase">Rentals</span>
       </span>
@@ -295,6 +297,7 @@ export default function CustomerLayout() {
         <Outlet />
       </main>
       <SiteFooter />
+      <FloatingContact />
     </div>
   )
 }
